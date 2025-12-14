@@ -1,7 +1,6 @@
 use std::os::raw::c_void;
 
 use libc::c_int;
-
 use serde::{Deserialize, Serialize};
 
 unsafe extern "C" {
@@ -14,6 +13,8 @@ unsafe extern "C" {
         composingText: *mut c_void,
         lengthPtr: *mut c_int,
         context: *const libc::c_char,
+        dictionary_path: *const libc::c_char,
+        weight_path: *const libc::c_char,
     ) -> *mut *mut FFICandidate;
     pub fn KanaKanjiConverter_StopComposition(converter: *mut c_void);
     pub fn ComposingText_InsertAtCursorPosition(
@@ -37,7 +38,7 @@ pub struct FFICandidate {
     corresponding_count: libc::c_int,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Candidate {
     pub text: String,
     pub corresponding_count: i32,
@@ -66,15 +67,21 @@ impl KanaKanjiConverter {
         &self,
         composing_text: &ComposingText,
         context: &str,
+        dictionary_path: &str,
+        weight_path: &str,
     ) -> Vec<Candidate> {
         unsafe {
             let c_str = std::ffi::CString::new(context).expect("CString::new failed");
             let mut length: c_int = 0;
+            let dict_c_str = std::ffi::CString::new(dictionary_path).expect("CString::new failed");
+            let weight_c_str = std::ffi::CString::new(weight_path).expect("CString::new failed");
             let candidates_ptr = KanaKanjiConverter_RequestCandidates(
                 self.converter,
                 composing_text.composing_text,
                 &mut length,
                 c_str.as_ptr(),
+                dict_c_str.as_ptr(),
+                weight_c_str.as_ptr(),
             );
             if candidates_ptr.is_null() {
                 panic!("Failed to get candidates");

@@ -2,10 +2,11 @@
 
 import Foundation
 
-import KanaKanjiConverterModuleWithDefaultDictionary
+import KanaKanjiConverterModule
 
 import ffi
 
+@MainActor var execURL = URL(filePath: "")
 public class ComposingTextWrapper {
     var value: ComposingText
 
@@ -41,20 +42,22 @@ public class ComposingTextWrapper {
     _ converter: UnsafeMutablePointer<KanaKanjiConverter>,
     _ composingText: UnsafeMutablePointer<ComposingTextWrapper>,
     _ lengthPtr: UnsafeMutablePointer<Int>,
-    _ context: UnsafePointer<CChar>
+    _ context: UnsafePointer<CChar>,
+    _ dictionaryPath: UnsafePointer<CChar>,
+    _ weightPath: UnsafePointer<CChar>,
 ) -> UnsafeMutablePointer<UnsafeMutablePointer<FFICandidate>> {
     let c = Unmanaged<KanaKanjiConverter>.fromOpaque(converter).takeUnretainedValue()
     let ct = Unmanaged<ComposingTextWrapper>.fromOpaque(composingText).takeUnretainedValue()
-
-    let options = ConvertRequestOptions.withDefaultDictionary(
+    let options = ConvertRequestOptions(
         requireJapanesePrediction: true,
         requireEnglishPrediction: false,
         keyboardLanguage: .ja_JP,
         learningType: .nothing,
+        dictionaryResourceURL: URL(filePath: String(cString: dictionaryPath)),
         memoryDirectoryURL: URL(filePath: "./"),
         sharedContainerURL: URL(filePath: "./"),
         zenzaiMode: .on(
-            weight: URL(filePath: "./ggml-model-Q5_K_M.gguf"), inferenceLimit: 1,
+            weight: URL(filePath: String(cString: weightPath)), inferenceLimit: 1,
             requestRichCandidates: true, personalizationMode: nil,
             versionDependentMode: .v3(.init(profile: "", leftSideContext: String(cString: context)))
         ),

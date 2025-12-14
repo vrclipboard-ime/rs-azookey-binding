@@ -17,7 +17,7 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/azookey/AzooKeyKanaKanjiConverter", branch: "66a341b7e656c2fff02c1399882e88ee067b3d31", traits: ["Zenzai"])
+        .package(url: "https://github.com/azookey/AzooKeyKanaKanjiConverter", branch: "c0d5e46b470a3177de44c9f44e66e19748afe62a", traits: ["Zenzai"])
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -26,7 +26,7 @@ let package = Package(
         .target(
             name: "azookey-swift",
             dependencies: [
-                .product(name: "KanaKanjiConverterModuleWithDefaultDictionary", package: "AzooKeyKanaKanjiConverter"),
+                .product(name: "KanaKanjiConverterModule", package: "azookeykanakanjiconverter"),
                 "ffi"
             ],
             swiftSettings: [.interoperabilityMode(.Cxx)],
