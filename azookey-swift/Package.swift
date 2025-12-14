@@ -17,7 +17,7 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/azookey/AzooKeyKanaKanjiConverter", branch: "c0d5e46b470a3177de44c9f44e66e19748afe62a", traits: ["Zenzai"])
+        .package(url: "https://github.com/vrclipboard-ime/AzooKeyKanaKanjiConverter", branch: "d4e83e3cb4133c04ed87aab54f8f07c98f5f8488", traits: ["Zenzai"])
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.

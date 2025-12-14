@@ -6,7 +6,7 @@ import KanaKanjiConverterModule
 
 import ffi
 
-@MainActor var execURL = URL(filePath: "")
+nonisolated(unsafe) var execURL = URL(filePath: "")
 public class ComposingTextWrapper {
     var value: ComposingText
 
@@ -15,30 +15,30 @@ public class ComposingTextWrapper {
     }
 }
 @_silgen_name("CreateKanaKanjiConverter")
-@MainActor public func create_kana_kanji_converter() -> UnsafeMutablePointer<KanaKanjiConverter> {
+public func create_kana_kanji_converter() -> UnsafeMutablePointer<KanaKanjiConverter> {
     let converter = KanaKanjiConverter()
     return Unmanaged.passRetained(converter).toOpaque().assumingMemoryBound(
         to: KanaKanjiConverter.self)
 }
 @_silgen_name("DestroyKanaKanjiConverter")
-@MainActor public func destroy_kana_kanji_converter(
+public func destroy_kana_kanji_converter(
     _ converter: UnsafeMutablePointer<KanaKanjiConverter>
 ) {
     Unmanaged<KanaKanjiConverter>.fromOpaque(converter).release()
 }
 @_silgen_name("CreateComposingText")
-@MainActor public func create_composing_text() -> UnsafeMutablePointer<ComposingTextWrapper> {
+public func create_composing_text() -> UnsafeMutablePointer<ComposingTextWrapper> {
     let c = ComposingTextWrapper(value: ComposingText())
     return Unmanaged.passRetained(c).toOpaque().assumingMemoryBound(to: ComposingTextWrapper.self)
 }
 @_silgen_name("DestroyComposingText")
-@MainActor public func destroy_composing_text(
+public func destroy_composing_text(
     _ composingText: UnsafeMutablePointer<ComposingTextWrapper>
 ) {
     Unmanaged<ComposingTextWrapper>.fromOpaque(composingText).release()
 }
 @_silgen_name("KanaKanjiConverter_RequestCandidates")
-@MainActor public func kana_kanji_converter_request_candidates(
+public func kana_kanji_converter_request_candidates(
     _ converter: UnsafeMutablePointer<KanaKanjiConverter>,
     _ composingText: UnsafeMutablePointer<ComposingTextWrapper>,
     _ lengthPtr: UnsafeMutablePointer<Int>,
@@ -46,8 +46,6 @@ public class ComposingTextWrapper {
     _ dictionaryPath: UnsafePointer<CChar>,
     _ weightPath: UnsafePointer<CChar>,
 ) -> UnsafeMutablePointer<UnsafeMutablePointer<FFICandidate>> {
-    let c = Unmanaged<KanaKanjiConverter>.fromOpaque(converter).takeUnretainedValue()
-    let ct = Unmanaged<ComposingTextWrapper>.fromOpaque(composingText).takeUnretainedValue()
     let options = ConvertRequestOptions(
         requireJapanesePrediction: true,
         requireEnglishPrediction: false,
@@ -65,7 +63,23 @@ public class ComposingTextWrapper {
         metadata: .init(versionString: "rs-azookey-binding")
     )
 
-    let candidates: ConversionResult = c.requestCandidates(ct.value, options: options)
+    // requestCandidatesがasyncになったため、同期的に待つ
+    var candidates: ConversionResult!
+    let semaphore = DispatchSemaphore(value: 0)
+    let converterAddr = Int(bitPattern: converter)
+    let composingTextAddr = Int(bitPattern: composingText)
+    Task {
+        guard let cPtr = UnsafeRawPointer(bitPattern: converterAddr),
+            let ctPtr = UnsafeRawPointer(bitPattern: composingTextAddr) else {
+            semaphore.signal()
+            return
+        }
+        let c = Unmanaged<KanaKanjiConverter>.fromOpaque(cPtr).takeUnretainedValue()
+        let ct = Unmanaged<ComposingTextWrapper>.fromOpaque(ctPtr).takeUnretainedValue()
+        candidates = await c.requestCandidates(ct.value, options: options)
+        semaphore.signal()
+    }
+    semaphore.wait()
 
     var result: [FFICandidate] = []
 
@@ -93,7 +107,7 @@ public class ComposingTextWrapper {
     return pointer
 }
 @_silgen_name("KanaKanjiConverter_StopComposition")
-@MainActor public func kana_kanji_converter_stop_composition(
+public func kana_kanji_converter_stop_composition(
     _ converter: UnsafeMutablePointer<KanaKanjiConverter>,
     _ composingText: UnsafeMutablePointer<ComposingTextWrapper>
 ) {
@@ -101,7 +115,7 @@ public class ComposingTextWrapper {
     c.stopComposition()
 }
 @_silgen_name("ComposingText_InsertAtCursorPosition")
-@MainActor public func composing_text_insert_at_cursor_position(
+public func composing_text_insert_at_cursor_position(
     _ composingText: UnsafeMutablePointer<ComposingTextWrapper>,
     _ text: UnsafePointer<CChar>,
 ) {
@@ -110,7 +124,7 @@ public class ComposingTextWrapper {
     ct.value.insertAtCursorPosition(str, inputStyle: .roman2kana)
 }
 @_silgen_name("ComposingText_DeleteForwardFromCursorPosition")
-@MainActor public func composing_text_delete_forward_from_cursor_position(
+public func composing_text_delete_forward_from_cursor_position(
     _ composingText: UnsafeMutablePointer<ComposingTextWrapper>,
     _ count: Int32
 ) {
@@ -118,7 +132,7 @@ public class ComposingTextWrapper {
     ct.value.deleteForwardFromCursorPosition(count: Int(count))
 }
 @_silgen_name("ComposingText_DeleteBackwardFromCursorPosition")
-@MainActor public func composing_text_delete_backward_from_cursor_position(
+public func composing_text_delete_backward_from_cursor_position(
     _ composingText: UnsafeMutablePointer<ComposingTextWrapper>,
     _ count: Int32
 ) {
