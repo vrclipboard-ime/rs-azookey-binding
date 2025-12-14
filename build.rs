@@ -63,6 +63,6 @@ fn main() {
         );
     }
 
-    println!("cargo:rustc-link-search={}/", project_dir);
+    println!("cargo:rustc-link-search={}/libs/", project_dir);
     println!("cargo:rustc-link-lib=azookey-swift");
 }
