@@ -1,0 +1,8 @@
+target/
+.git/
+*.dll
+*.so
+*.dylib
+*.zip
+*.gguf
+.gitignore
